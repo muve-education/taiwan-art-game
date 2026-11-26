@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+html_code = """<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台灣藝術尋寶 - 藝術環島之旅 (可上傳照片版)</title>
+    <title>台灣藝術尋寶 - 藝術環島之旅 (合成音效＋離線備援版)</title>
     <style>
-        /* 遵照眼動教材防反光規範，背景採用柔和的溫和米色 */
+        /* 遵照眼動教材防反光規範，背景採用柔和的溫和米色，並提供離線漸層備援 */
         body {
             background-color: #f5f2eb;
             font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
@@ -30,8 +30,10 @@
             position: relative;
         }
 
+        /* 線上背景圖搭配離線漸層底色備援 */
         .bg-map-layer {
-            background-image: url('https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80');
+            background: linear-gradient(135deg, #f5f2eb 0%, #e8dfd1 100%);
+            background-image: url('https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80'), linear-gradient(135deg, #f5f2eb 0%, #e8dfd1 100%);
             background-size: cover;
             background-position: center;
         }
@@ -41,6 +43,27 @@
 
         .screen { display: none; }
         .active { display: block; }
+
+        /* 頂部工具列 */
+        .top-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+        }
+        .sound-toggle {
+            background-color: #fdf6ec;
+            border: 2px solid #d5c4a1;
+            color: #5c3a21;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .sound-toggle:hover {
+            background-color: #f3e5d0;
+        }
 
         /* 按鈕樣式 */
         .btn {
@@ -83,15 +106,15 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-top: 30px;
+            margin-top: 20px;
         }
         .zone-card {
-            width: 80%;
+            width: 85%;
             background: rgba(250, 246, 240, 0.95);
             border: 2px solid #e6dfd3;
             border-radius: 12px;
-            padding: 20px;
-            margin: 10px 0;
+            padding: 18px 20px;
+            margin: 8px 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -133,8 +156,12 @@
             color: #4f5f5f;
             cursor: pointer;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
-            transition: all 0.2s;
+            transition: all 0.1s;
             user-select: none;
+        }
+        .block-canvas:active {
+            transform: scale(0.95);
+            background-color: #aeb6bf;
         }
         .progress-bar-container {
             width: 60%;
@@ -155,6 +182,7 @@
             max-height: 200px;
             border: 3px double #8b5a2b;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 4px;
         }
 
         /* 東部關卡：抽象拼貼樣式 */
@@ -178,6 +206,10 @@
             cursor: pointer;
             border: 2px solid rgba(0,0,0,0.1);
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+        .palette-item:active {
+            transform: scale(0.95);
         }
         .art-canvas-frame {
             width: 60%;
@@ -193,6 +225,11 @@
             position: absolute;
             border-radius: 4px;
             mix-blend-mode: multiply;
+            animation: popIn 0.3s ease-out forwards;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.2); opacity: 0; }
+            to { opacity: 0.85; }
         }
 
         /* 知識問答與解鎖圖卡 */
@@ -207,6 +244,11 @@
             border-radius: 8px;
             cursor: pointer;
             text-align: left;
+            transition: background 0.2s;
+        }
+        .quiz-option:hover:not(:disabled) {
+            background: #fff9f3;
+            border-color: #8b5a2b;
         }
         .quiz-feedback {
             font-size: 18px;
@@ -228,7 +270,7 @@
             display: none;
         }
 
-        /* 九蛙疊像區 */
+        /* 九蛙疊像區（含離線山水漸層背景備援） */
         .water-game-container {
             display: flex;
             justify-content: space-between;
@@ -252,6 +294,7 @@
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
+            transition: all 0.2s;
         }
         .level-select-btn.selected {
             background: #3498db;
@@ -259,7 +302,8 @@
         }
         .water-visual {
             width: 50%;
-            background-image: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80');
+            background: linear-gradient(to bottom, #a3d5ff 0%, #d4efdf 60%, #82e0aa 100%);
+            background-image: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80'), linear-gradient(to bottom, #a3d5ff 0%, #d4efdf 60%, #82e0aa 100%);
             background-size: cover;
             background-position: center;
             border-radius: 8px;
@@ -308,6 +352,9 @@
 <body class="bg-map-layer">
 
 <div id="game-container">
+    <div class="top-bar">
+        <button id="btn-sound-toggle" class="sound-toggle" onclick="toggleSound()">🔊 音效：開啟</button>
+    </div>
     
     <!-- 畫面 1：遊戲主地圖 -->
     <div id="screen-map" class="screen active">
@@ -400,7 +447,7 @@
                     <div class="water-label-display" id="water-text">目前水位：-- 公尺</div>
                     <div class="water-element" id="water-bar" style="height: 0%;"></div>
                     <div class="frog-sprite-container">
-                        <img id="frog-sprite-img" class="frog-image" src="https://images.unsplash.com/photo-1598439210625-5067c578f3f6?auto=format&fit=crop&w=400&q=80" alt="九蛙疊像雕塑">
+                        <img id="frog-sprite-img" class="frog-image" src="" alt="九蛙疊像雕塑">
                     </div>
                 </div>
             </div>
@@ -415,7 +462,6 @@
         <h2>南部關卡：嘉義與高雄藝術知識尋寶</h2>
         <p>回答出正確的歷史知識，即可成功解鎖珍貴的藝術大師畫作卡！</p>
 
-        <!-- ✨ 新增：老師/使用者自訂上傳照片控制面板 -->
         <div class="upload-box">
             <label for="custom-art-upload">📁 上傳自訂畫作/照片 (取代本關解鎖卡)：</label>
             <input type="file" id="custom-art-upload" class="file-input" accept="image/*" onchange="handleImageUpload(event)">
@@ -426,7 +472,6 @@
             <div id="quiz-container">
                 <h3 id="quiz-question" style="text-align: left; color: #2c3e50;">題目載入中...</h3>
                 <div id="quiz-options"></div>
-                <!-- 顯示畫作珍藏卡 -->
                 <img id="art-card" class="art-card-display" src="" alt="藝術珍藏解鎖">
                 <div id="quiz-feedback" class="quiz-feedback" style="display:none;"></div>
             </div>
@@ -455,7 +500,7 @@
             
             <p id="collage-counter-text" style="font-weight: bold; margin-top: 15px; color: #7e5109;">目前已拼貼色塊：0 / 8 層</p>
             <div id="east-achievement" class="quiz-feedback correct" style="display: none; font-size: 14px; text-align: left;">
-                ✨ <b>解鎖東部寶藏！</b> 恭喜您透過色彩重組完成江賢二藝術園區的抽象體驗。
+                ✨ <b>解鎖東部寶藏！</b> 恭喜您透過色彩重組完成江賢二藝術園區的抽象體驗。江賢二老師移居台東後，畫風轉為明亮開闊，常以台東大自然、音樂為主題，創作出著名的《比西里岸之夢》等系列名作。
             </div>
         </div>
         
@@ -465,21 +510,177 @@
 </div>
 
 <script>
+    /* ==========================================================================
+       1. Web Audio API 程式合成音效引擎（零外部 MP3 依賴）
+       ========================================================================== */
+    let soundEnabled = true;
+    let audioCtx = null;
+
+    function getAudioCtx() {
+        if (!audioCtx) {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (Ctx) audioCtx = new Ctx();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        return audioCtx;
+    }
+
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        const btn = document.getElementById('btn-sound-toggle');
+        btn.innerText = soundEnabled ? '🔊 音效：開啟' : '🔇 音效：靜音';
+        if (soundEnabled) playSynthSound('click');
+    }
+
+    function playSynthSound(type) {
+        if (!soundEnabled) return;
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+
+        const now = ctx.currentTime;
+
+        if (type === 'click') {
+            // 清脆短促按鈕音
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(620, now);
+            osc.frequency.exponentialRampToValueAtTime(320, now + 0.08);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.08);
+
+        } else if (type === 'chisel') {
+            // 雕刻敲擊聲（低頻木石共振 + 清脆敲擊）
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(240 + Math.random() * 60, now);
+            osc.frequency.exponentialRampToValueAtTime(65, now + 0.11);
+            gain.gain.setValueAtTime(0.28, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.11);
+
+        } else if (type === 'brush') {
+            // 水彩刷色滑音
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(360, now);
+            osc.frequency.linearRampToValueAtTime(580, now + 0.14);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.14);
+
+        } else if (type === 'success') {
+            // 歡樂三連音（Do - Mi - Sol - High Do）
+            const notes = [523.25, 659.25, 783.99, 1046.50];
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                const start = now + i * 0.1;
+                osc.frequency.setValueAtTime(freq, start);
+                gain.gain.setValueAtTime(0.18, start);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.25);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(start);
+                osc.stop(start + 0.25);
+            });
+
+        } else if (type === 'fail') {
+            // 溫和低沉提示音
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(210, now);
+            osc.frequency.linearRampToValueAtTime(145, now + 0.28);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.28);
+        }
+    }
+
+    /* ==========================================================================
+       2. 離線圖片備援機制（當網路斷線或圖庫無法載入時自動生成 SVG 圖卡）
+       ========================================================================== */
+    function makeOfflineSvg(title, subtitle, bg1, bg2, emoji) {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
+            <defs>
+                <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="${bg1}"/>
+                    <stop offset="100%" stop-color="${bg2}"/>
+                </linearGradient>
+            </defs>
+            <rect width="600" height="400" rx="16" fill="url(#g)"/>
+            <rect x="20" y="20" width="560" height="360" rx="12" fill="none" stroke="#8b5a2b" stroke-width="4" stroke-dasharray="10,6"/>
+            <text x="300" y="155" font-size="72" text-anchor="middle">${emoji}</text>
+            <text x="300" y="235" font-family="Microsoft JhengHei, sans-serif" font-size="30" font-weight="bold" fill="#4a3520" text-anchor="middle">${title}</text>
+            <text x="300" y="280" font-family="Microsoft JhengHei, sans-serif" font-size="18" fill="#6e5034" text-anchor="middle">${subtitle}</text>
+            <text x="300" y="345" font-family="Microsoft JhengHei, sans-serif" font-size="14" fill="#8b5a2b" text-anchor="middle">（離線藝術典藏圖卡）</text>
+        </svg>`;
+        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }
+
+    function makeFrogsSvg(exposedCount) {
+        let frogsMarkup = '';
+        for (let i = 0; i < 9; i++) {
+            const y = 340 - i * 34;
+            const isExposed = i >= (9 - exposedCount);
+            const fill = isExposed ? '#2e7d32' : '#546e7a';
+            const label = 9 - i;
+            frogsMarkup += `
+                <ellipse cx="200" cy="${y}" rx="${38 - i * 1.5}" ry="16" fill="${fill}" stroke="#1b5e20" stroke-width="2"/>
+                <circle cx="${188 - i}" cy="${y - 10}" r="5" fill="#fff"/>
+                <circle cx="${212 + i}" cy="${y - 10}" r="5" fill="#fff"/>
+                <circle cx="${188 - i}" cy="${y - 10}" r="2.5" fill="#111"/>
+                <circle cx="${212 + i}" cy="${y - 10}" r="2.5" fill="#111"/>
+                <text x="200" y="${y + 5}" font-family="sans-serif" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">第${label}蛙</text>
+            `;
+        }
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="380" viewBox="0 0 400 380">
+            <rect x="145" y="352" width="110" height="24" rx="6" fill="#7f8c8d"/>
+            ${frogsMarkup}
+        </svg>`;
+        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }
+
+    // 綁定圖片載入失敗時的自動離線替換
+    function setImageWithFallback(imgEl, onlineUrl, fallbackDataUri) {
+        imgEl.onerror = function() {
+            this.onerror = null;
+            this.src = fallbackDataUri;
+        };
+        imgEl.src = onlineUrl;
+    }
+
     // 儲存使用者上傳的照片 Data URL
     let customUploadedImageUrl = null;
 
-    /* ==========================================================================
-       ✨ 上傳檔案處理核心邏輯
-       ========================================================================== */
     function handleImageUpload(event) {
         const file = event.target.files[0];
         if (file) {
-            // 使用 FileReader 將檔案轉為網頁可讀取的 Data URL
             const reader = new FileReader();
             reader.onload = function(e) {
                 customUploadedImageUrl = e.target.result;
                 document.getElementById('upload-status').innerText = `✅ 已成功載入照片：${file.name}`;
                 document.getElementById('upload-status').style.color = '#27ae60';
+                playSynthSound('success');
             };
             reader.readAsDataURL(file);
         }
@@ -497,19 +698,24 @@
     }
 
     function backToMap() {
+        playSynthSound('click');
         showScreen('screen-map');
     }
 
-    /* 東部關卡邏輯 */
+    /* ==========================================================================
+       東部關卡邏輯
+       ========================================================================== */
     let collageCount = 0;
     const targetCollageCount = 8;
 
     function openEastLevel() {
+        playSynthSound('click');
         showScreen('screen-east');
-        clearCanvas();
+        clearCanvas(true);
     }
 
-    function clearCanvas() {
+    function clearCanvas(silent = false) {
+        if (!silent) playSynthSound('click');
         const canvas = document.getElementById('art-canvas');
         canvas.innerHTML = '';
         collageCount = 0;
@@ -519,6 +725,7 @@
 
     function addCollageElement(color, colorName) {
         if(collageCount >= 20) return;
+        playSynthSound('brush');
         collageCount++;
         
         const canvas = document.getElementById('art-canvas');
@@ -527,8 +734,8 @@
         
         const w = Math.floor(Math.random() * 80) + 50;
         const h = Math.floor(Math.random() * 80) + 50;
-        const left = Math.floor(Math.random() * (canvas.clientWidth - w));
-        const top = Math.floor(Math.random() * (canvas.clientHeight - h));
+        const left = Math.floor(Math.random() * Math.max(10, canvas.clientWidth - w));
+        const top = Math.floor(Math.random() * Math.max(10, canvas.clientHeight - h));
         
         element.style.width = w + 'px';
         element.style.height = h + 'px';
@@ -548,11 +755,14 @@
         }
 
         if(collageCount === targetCollageCount) {
+            playSynthSound('success');
             document.getElementById('east-achievement').style.display = 'block';
         }
     }
 
-    /* 北部關卡邏輯 */
+    /* ==========================================================================
+       北部關卡邏輯
+       ========================================================================== */
     let currentSculptureType = '';
     let sculptureClicks = 0;
     const clicksRequired = 15;
@@ -562,22 +772,26 @@
             title: "黃土水 ——【水牛群像】模板雕刻",
             blockText: "🪨 點擊開鑿雕塑石胚",
             imageAsset: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=600&q=80",
-            explain: "✨ <b>雕刻解鎖成功！</b> 黃土水大師（1895-1930）是台灣第一位赴日學習美術並入選帝國美術展覽會的雕刻家。"
+            fallbackSvg: makeOfflineSvg("黃土水《水牛群像》", "台灣國寶級浮雕經典作品（1930）", "#f7efe2", "#e2cfb6", "🐃"),
+            explain: "✨ <b>雕刻解鎖成功！</b> 黃土水大師（1895-1930）是台灣第一位赴日學習美術並入選帝國美術展覽會的雕刻家。《水牛群像》展現了台灣農村水牛與牧童的濃厚鄉土情感。"
         },
         juming: {
             title: "朱銘 ——【彩繪人間】木雕與上色",
             blockText: "🪵 點擊雕刻大型木材",
             imageAsset: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=600&q=80",
-            explain: "✨ <b>雕刻與彩繪解鎖成功！</b> 朱銘大師（1938-2023）跟隨苗栗慈惠宮李金川師傅開啟雕刻生涯。"
+            fallbackSvg: makeOfflineSvg("朱銘《彩繪人間》", "當代木雕與鮮豔色彩的融合", "#fdebd0", "#f5cba7", "🗿"),
+            explain: "✨ <b>雕刻與彩繪解鎖成功！</b> 朱銘大師（1938-2023）跟隨苗栗慈惠宮李金川師傅開啟雕刻生涯。《彩繪人間》以大刀闊斧的木雕結合生動色彩，刻劃人生百態。"
         }
     };
 
     function openNorthLevel() {
+        playSynthSound('click');
         showScreen('screen-north');
-        resetNorthLevel();
+        resetNorthLevel(true);
     }
 
-    function resetNorthLevel() {
+    function resetNorthLevel(silent = false) {
+        if (!silent) playSynthSound('click');
         sculptureClicks = 0;
         currentSculptureType = '';
         document.getElementById('north-guide-text').innerText = "請先選擇你想體驗的藝術大師創作項目：";
@@ -591,6 +805,7 @@
     }
 
     function selectSculpture(type) {
+        playSynthSound('click');
         currentSculptureType = type;
         const data = sculptureDatabase[type];
         document.getElementById('north-guide-text').innerText = "大師工坊體驗中：";
@@ -605,6 +820,7 @@
         if (sculptureClicks >= clicksRequired) return;
 
         sculptureClicks++;
+        playSynthSound('chisel');
 
         const progressPercent = Math.min((sculptureClicks / clicksRequired) * 100, 100);
         document.getElementById('sculpture-progress').style.width = progressPercent + '%';
@@ -617,24 +833,30 @@
         } else if (progressPercent < 100) {
             statusText.innerText = `進度：最後作品修邊與彩繪拋光 (${Math.floor(progressPercent)}%)`;
         } else {
+            playSynthSound('success');
             statusText.innerText = "🎉 雕刻傑作大功告成 (100%)！";
             document.getElementById('stone-block').style.display = 'none';
             
             const data = sculptureDatabase[currentSculptureType];
-            document.getElementById('sculpture-art-img').src = data.imageAsset;
+            const artImg = document.getElementById('sculpture-art-img');
+            setImageWithFallback(artImg, data.imageAsset, data.fallbackSvg);
             document.getElementById('sculpture-explain-text').innerHTML = data.explain;
             document.getElementById('sculpture-finished-view').style.display = 'block';
             document.getElementById('btn-north-reset').style.display = 'inline-block';
         }
     }
 
-    /* 中部關卡邏輯 */
+    /* ==========================================================================
+       中部關卡邏輯
+       ========================================================================== */
     function openCentralLevel() {
+        playSynthSound('click');
         showScreen('screen-central');
-        changeWaterLevel(747.50, 3, 'wb-2');
+        changeWaterLevel(747.50, 3, 'wb-2', true);
     }
 
-    function changeWaterLevel(heightMetres, exposedFrogs, btnId) {
+    function changeWaterLevel(heightMetres, exposedFrogs, btnId, silent = false) {
+        if (!silent) playSynthSound('click');
         document.querySelectorAll('.water-controls .level-select-btn').forEach(b => b.classList.remove('selected'));
         document.getElementById(btnId).classList.add('selected');
 
@@ -647,12 +869,13 @@
 
         const frogImg = document.getElementById('frog-sprite-img');
         const feedback = document.getElementById('water-feedback');
+        const fallbackFrogSvg = makeFrogsSvg(exposedFrogs);
 
         if (exposedFrogs === 1) {
-            frogImg.src = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80"; 
+            setImageWithFallback(frogImg, "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80", fallbackFrogSvg);
             feedback.innerHTML = `🌊 <b>此時為滿水位！</b> 水淹得非常高，九蛙雕像僅露出最頂端第1隻青蛙的頭頂喔！`;
         } else {
-            frogImg.src = "https://images.unsplash.com/photo-1598439210625-5067c578f3f6?auto=format&fit=crop&w=400&q=80"; 
+            setImageWithFallback(frogImg, "https://images.unsplash.com/photo-1598439210625-5067c578f3f6?auto=format&fit=crop&w=400&q=80", fallbackFrogSvg);
             if (exposedFrogs === 3) {
                 feedback.innerHTML = `🐸 <b>常態高水位。</b> 水位適中，最上層的 3 隻青蛙露在空氣中，其餘 6 隻在水面下。`;
             } else if (exposedFrogs === 6) {
@@ -663,13 +886,16 @@
         }
     }
 
-    /* 南部關卡邏輯 (結合使用者上傳照片功能) */
+    /* ==========================================================================
+       南部關卡邏輯
+       ========================================================================== */
     const southQuizData = [
         {
             question: "【膠彩畫探索】陳進女士是第一位遠赴日本東京美術學校留學的台灣女性藝術家。請問下列哪一件是她描繪傳統台灣女性典雅氣質的經典代表作（目前藏於高雄市立美術館）？",
             options: ["《比西里岸之夢》", "《香蘭》", "《展望諸羅城》", "《少女》"],
             correct: 1,
             defaultImageAsset: "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=600&q=80",
+            fallbackSvg: makeOfflineSvg("陳進《香蘭》", "台灣膠彩畫之母・典雅女性肖像", "#fce4ec", "#f8bbd0", "🌺"),
             explain: "答對了！《香蘭》是陳進最具代表性的膠彩畫作之一，細緻刻劃了台灣傳統女性的典雅氣質與本土植物特色。"
         },
         {
@@ -677,6 +903,7 @@
             options: ["黃土水", "朱銘", "陳澄波", "林添木"],
             correct: 2,
             defaultImageAsset: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=600&q=80",
+            fallbackSvg: makeOfflineSvg("陳澄波《展望諸羅城》", "嘉義戶外寫生油畫經典巨作", "#fff3e0", "#ffe0b2", "🎨"),
             explain: "完全正確！陳澄波大師對繪畫充滿狂熱，《展望諸羅城》便是他描繪家鄉風光的傳世經典。"
         }
     ];
@@ -684,6 +911,7 @@
     let currentQuizIndex = 0;
 
     function openSouthLevel() {
+        playSynthSound('click');
         currentQuizIndex = 0;
         showScreen('screen-south');
         loadQuizQuestion();
@@ -721,17 +949,19 @@
         document.querySelectorAll('.quiz-option').forEach(btn => btn.disabled = true);
 
         if (selectedIndex === quiz.correct) {
+            playSynthSound('success');
             feedbackDiv.className = "quiz-feedback correct";
             feedbackDiv.innerHTML = `🎉 答對了！成功解鎖藝術寶藏！<br><span style="font-size:15px; font-weight:normal;">${quiz.explain}</span>`;
             
-            // ✨ 關鍵邏輯：若使用者有上傳檔案，優先使用上傳的照片；否則使用預設畫作
             if (customUploadedImageUrl) {
+                artCard.onerror = null;
                 artCard.src = customUploadedImageUrl;
             } else {
-                artCard.src = quiz.defaultImageAsset;
+                setImageWithFallback(artCard, quiz.defaultImageAsset, quiz.fallbackSvg);
             }
             artCard.style.display = 'block';
         } else {
+            playSynthSound('fail');
             feedbackDiv.className = "quiz-feedback wrong";
             feedbackDiv.innerHTML = `❌ 答錯囉，再想想看！<br><span style="font-size:15px; font-weight:normal;">正確答案應該是數字 ${quiz.correct + 1}。</span>`;
         }
@@ -746,10 +976,12 @@
     }
 
     function nextQuiz() {
+        playSynthSound('click');
         if (currentQuizIndex < southQuizData.length - 1) {
             currentQuizIndex++;
             loadQuizQuestion();
         } else {
+            playSynthSound('success');
             alert("✨ 恭喜您成功收集完南部地區的藝術寶藏！");
             showScreen('screen-map');
         }
@@ -758,3 +990,9 @@
 
 </body>
 </html>
+"""
+
+with open("index.html", "w", encoding="utf-8") as f:
+    f.write(html_code)
+
+print("index.html with synth audio and offline fallback generated.")

@@ -1,0 +1,1383 @@
+已為您調整為全螢幕自適應比例佈局！
+
+針對您指定的螢幕比例需求，本次修改重點如下：
+
+* **全螢幕寬幅主容器（`#game-container`）**：將寬度設定為 `width: min(94vw, 1200px)`、高度為 `min-height: 92vh`，徹底填滿可視區域，消除左右大片空白，讓眼動注視熱區與按鍵面積更寬敞舒適。
+* **滿版自適應台灣地圖舞台（`.taiwan-map-container`）**：取消原本 `500px` 與固定 `3:4` 的窄框限制，讓地圖容器自動撐滿整個主視窗的可視高度與寬度（`width: 100%; height: 100%; min-height: 68vh`），同時透過 `object-fit: contain` 與相對比例容器確保台灣地圖完整清晰且四個區域地標（北、中、南、東）精準對位不跑版。
+* **各關卡互動區同步放大**：北部石雕、中部吹玻璃、南部捏黏土與東部抽象畫布的操作舞台皆同步放大為寬螢幕比例，適合大螢幕與眼動儀操作。
+
+您可以直接複製以下完整程式碼覆蓋 `index.html`：
+
+```html
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣藝術尋寶 - 藝術環島之旅</title>
+    <style>
+        /* 遵照眼動教材防反光規範，背景採用柔和的溫和米色 */
+        * {
+            box-sizing: border-box;
+        }
+        html, body {
+            background-color: #f5f2eb;
+            font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
+            color: #333;
+            margin: 0;
+            padding: 1.5vh 1.5vw;
+            width: 100vw;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* 全螢幕自適應比例主容器：寬度 min(94vw, 1200px)，高度自動填滿可視區域 */
+        #game-container {
+            width: min(94vw, 1200px);
+            min-height: 94vh;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+            padding: 20px 32px;
+            text-align: center;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        h1 { color: #8b5a2b; margin: 0 0 4px 0; font-size: clamp(26px, 2.8vw, 36px); }
+        h2 { color: #5c3a21; margin: 0 0 4px 0; font-size: clamp(22px, 2.4vw, 30px); }
+        .sub-desc { font-size: clamp(16px, 1.3vw, 19px); margin: 2px 0 10px 0; color: #555; }
+
+        .screen {
+            display: none;
+            width: 100%;
+            flex: 1;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .screen.active {
+            display: flex;
+        }
+
+        /* 按鈕樣式（加大眼動友善點擊面積） */
+        .btn {
+            background-color: #8b5a2b;
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            margin: 8px;
+        }
+        .btn:hover { background-color: #704723; }
+        .btn:active { transform: scale(0.98); }
+        .btn-back { background-color: #7f8c8d; align-self: center; }
+        .btn-back:hover { background-color: #626d6e; }
+
+        /* 上傳控制區樣式 */
+        .upload-box {
+            background-color: #fff9f0;
+            border: 2px dashed #d35400;
+            border-radius: 10px;
+            padding: 10px 18px;
+            margin: 0 auto 10px auto;
+            width: 100%;
+            max-width: 860px;
+            text-align: left;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .upload-box-left {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+        .upload-box label {
+            font-weight: bold;
+            color: #d35400;
+        }
+        .file-input { font-size: 15px; }
+        .btn-mini-reset {
+            background: #e67e22;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 5px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-mini-reset:hover { background: #d35400; }
+
+        /* ==========================================================================
+           全螢幕寬敞台灣地圖主容器：填滿可視高度與寬度，徹底解決只佔三分之一問題
+           ========================================================================== */
+        .taiwan-map-container {
+            position: relative;
+            width: 100%;
+            flex: 1;
+            min-height: 68vh;
+            margin: 6px auto 0 auto;
+            background: radial-gradient(circle at 50% 50%, #e6f4f8 0%, #cde4ee 100%);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: inset 0 0 24px rgba(41, 128, 185, 0.14), 0 8px 20px rgba(0,0,0,0.08);
+            border: 3px solid #cbdce4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 內部地圖對位框：高度撐滿容器 96%，並保持與台灣地圖一致的寬高比，確保地標精準對齊 */
+        .taiwan-map-inner {
+            position: relative;
+            height: 96%;
+            aspect-ratio: 3 / 4;
+            max-width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .taiwan-real-map-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            user-select: none;
+            pointer-events: none;
+            filter: drop-shadow(0 8px 18px rgba(0,0,0,0.18));
+        }
+
+        /* 地標按鈕：加大尺寸方便眼動注視與大螢幕觀看 */
+        .map-pin {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.96);
+            border: 3px solid #8b5a2b;
+            border-radius: 16px;
+            padding: 12px 20px;
+            font-size: clamp(16px, 1.45vw, 21px);
+            font-weight: bold;
+            color: #5c3a21;
+            cursor: pointer;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.22);
+            transition: transform 0.2s, background-color 0.2s, border-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-align: left;
+            white-space: nowrap;
+            z-index: 10;
+        }
+        .map-pin:hover {
+            transform: translate(-50%, -50%) scale(1.08);
+            background-color: #f39c12;
+            color: #ffffff;
+            border-color: #ffffff;
+            z-index: 20;
+        }
+        .map-pin:hover span.pin-sub {
+            color: #fff9e6 !important;
+        }
+
+        /* 精準對應台灣本島北、中、南、東位置 */
+        .pin-north   { top: 16%; left: 74%; }
+        .pin-central { top: 43%; left: 26%; }
+        .pin-south   { top: 75%; left: 24%; }
+        .pin-east    { top: 56%; left: 82%; }
+
+        /* 通用互動區域：全寬敞開佈局 */
+        .play-zone {
+            background: #fafafa;
+            border: 2px dashed #dcd6cc;
+            border-radius: 16px;
+            padding: 24px 32px;
+            margin: 6px 0 12px 0;
+            width: 100%;
+            flex: 1;
+            min-height: 62vh;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .progress-bar-container {
+            width: 85%;
+            max-width: 560px;
+            background-color: #e0e0e0;
+            border-radius: 12px;
+            height: 26px;
+            overflow: hidden;
+            margin: 16px auto 8px auto;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background-color: #e67e22;
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        /* 北部關卡：石雕專屬選項與雕刻畫面 */
+        .sculpture-category-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #8b5a2b;
+            margin: 14px 0 10px 0;
+            text-align: center;
+        }
+        .sculpture-options-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .sculpture-btn {
+            background-color: #ffffff;
+            border: 2px solid #d5cab8;
+            border-radius: 12px;
+            padding: 16px 30px;
+            font-size: 21px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .sculpture-btn:hover, .sculpture-btn.selected {
+            background-color: #7f8c8d;
+            color: white;
+            border-color: #2c3e50;
+            transform: translateY(-2px);
+        }
+
+        .sculpture-playground {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+        .block-canvas {
+            width: min(60vw, 440px);
+            height: min(46vh, 380px);
+            background-color: #bdc3c7;
+            border: 6px solid #7f8c8d;
+            border-radius: 18px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: #4f5f5f;
+            cursor: pointer;
+            box-shadow: inset 0 0 25px rgba(0,0,0,0.25), 0 8px 20px rgba(0,0,0,0.15);
+            transition: all 0.2s;
+            user-select: none;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+            padding: 16px;
+        }
+        
+        /* 北部成品尺寸：超大視覺震撼展示卡 */
+        .sculpture-finished-card {
+            width: min(80vw, 620px);
+            height: min(48vh, 450px);
+            background: radial-gradient(circle, #ffffff 60%, #e2e8f0 100%);
+            border: 8px double #7f8c8d;
+            border-radius: 20px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 10px auto;
+            padding: 16px;
+        }
+        .sculpture-finished-icon {
+            font-size: clamp(120px, 18vh, 180px);
+            filter: drop-shadow(4px 8px 10px rgba(0,0,0,0.3));
+        }
+        .sculpture-custom-result {
+            max-width: 90%;
+            max-height: 75%;
+            object-fit: contain;
+            border-radius: 12px;
+            filter: grayscale(100%) contrast(125%) drop-shadow(4px 8px 10px rgba(0,0,0,0.35));
+            border: 4px solid #7f8c8d;
+        }
+
+        /* 中部關卡：吹玻璃工坊 */
+        .glass-playzone {
+            background: #1e272e !important;
+            border: 4px solid #34495e;
+            color: #ffffff;
+        }
+        .glass-color-grid, .glass-shape-grid {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin: 10px 0 16px 0;
+        }
+        .color-dot-btn {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            border: 3px solid #ffffff;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .color-dot-btn:hover, .color-dot-btn.selected {
+            transform: scale(1.22);
+            box-shadow: 0 0 16px rgba(255,255,255,0.9);
+        }
+        .glass-btn {
+            background-color: #2c3e50;
+            border: 2px solid #576574;
+            color: #ffffff;
+            border-radius: 12px;
+            padding: 12px 22px;
+            font-size: 19px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .glass-btn:hover, .glass-btn.selected {
+            background-color: #00d2d3;
+            color: #1e272e;
+            border-color: #00d2d3;
+            font-weight: bold;
+        }
+        .glass-btn-svg {
+            width: 26px;
+            height: 26px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2.2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .glass-stage {
+            width: min(60vw, 440px);
+            height: min(46vh, 380px);
+            margin: 12px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .glass-bulb {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #ff6b6b, #ee5253);
+            box-shadow: 0 0 25px rgba(255, 107, 107, 0.8), inset 0 0 15px rgba(255,255,255,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            user-select: none;
+            border: 3px solid rgba(255,255,255,0.85);
+            margin: 0 auto;
+            overflow: hidden;
+            padding: 14px;
+        }
+        .glass-lineart-box {
+            width: 74%;
+            height: 74%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        .glass-lineart-box svg {
+            width: 100%;
+            height: 100%;
+            stroke: #111111;
+            fill: none;
+            stroke-width: 2.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: drop-shadow(0 0 2px rgba(255,255,255,0.75));
+        }
+        .glass-custom-lineart {
+            max-width: 85%;
+            max-height: 85%;
+            object-fit: contain;
+            mix-blend-mode: multiply;
+            filter: contrast(150%) grayscale(100%);
+        }
+
+        /* 南部關卡：捏黏土工坊 */
+        .clay-category-title {
+            font-size: 19px;
+            font-weight: bold;
+            color: #8b5a2b;
+            margin: 10px 0 6px 0;
+            text-align: center;
+        }
+        .clay-options-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+        .clay-btn {
+            background-color: #ffffff;
+            border: 2px solid #d5cab8;
+            border-radius: 12px;
+            padding: 14px 26px;
+            font-size: 19px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .clay-btn:hover, .clay-btn.selected {
+            background-color: #e67e22;
+            color: white;
+            border-color: #d35400;
+        }
+        .clay-canvas {
+            width: min(55vw, 400px);
+            height: min(44vh, 360px);
+            background-color: #f39c12;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 120px;
+            cursor: pointer;
+            margin: 12px auto;
+            user-select: none;
+            position: relative;
+            border: 6px solid #ffffff;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.25), inset 0 0 15px rgba(255,255,255,0.4);
+            transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-radius 0.3s ease;
+        }
+        .clay-symbol-text {
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.4));
+            transition: transform 0.2s;
+        }
+
+        /* 東部關卡：江賢二抽象畫布 */
+        .collage-container {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 36px;
+            width: 100%;
+        }
+        .color-palette {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-width: 240px;
+        }
+        .palette-item {
+            padding: 16px 24px;
+            border-radius: 12px;
+            color: white;
+            font-size: 19px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid rgba(0,0,0,0.1);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            transition: transform 0.15s;
+        }
+        .palette-item:hover {
+            transform: scale(1.04);
+        }
+        .art-canvas-frame {
+            width: min(58vw, 520px);
+            height: min(48vh, 430px);
+            background-color: #fff;
+            border: 8px solid #5c3a21;
+            border-radius: 12px;
+            box-shadow: inset 0 0 12px rgba(0,0,0,0.15), 0 8px 20px rgba(0,0,0,0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        .collage-element {
+            position: absolute;
+            border-radius: 4px;
+            mix-blend-mode: multiply;
+        }
+        .quiz-feedback.correct {
+            background: #e8f8f0;
+            color: #27ae60;
+            padding: 12px 18px;
+            border-radius: 10px;
+            border: 2px solid #27ae60;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    
+    <!-- 畫面 1：全螢幕比例台灣地圖主選單 -->
+    <div id="screen-map" class="screen active">
+        <div>
+            <h1>🎨 台灣藝術尋寶</h1>
+            <p class="sub-desc">點選台灣地圖上的區域地標，展開屬於您的藝術環島之旅！</p>
+
+            <!-- 上傳自訂台灣地圖控制列 -->
+            <div class="upload-box">
+                <div class="upload-box-left">
+                    <label for="custom-map-upload">🗺️ 替換首頁台灣地圖：</label>
+                    <input type="file" id="custom-map-upload" class="file-input" accept="image/*" onchange="handleMapUpload(event)">
+                    <span id="map-upload-status" style="font-size: 13px; color: #7f8c8d;">目前使用預設台灣地圖</span>
+                </div>
+                <button type="button" id="btn-reset-map" class="btn-mini-reset" style="display:none;" onclick="resetDefaultMap()">恢復預設地圖</button>
+            </div>
+        </div>
+
+        <div class="taiwan-map-container" id="taiwan-map-container">
+            <div class="taiwan-map-inner">
+                <!-- 真實中華民國台灣地形行政地圖 -->
+                <img id="taiwan-map-img"
+                     class="taiwan-real-map-img"
+                     src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Taiwan_location_map.svg/900px-Taiwan_location_map.svg.png"
+                     onerror="handleMapLoadError(this)"
+                     alt="中華民國台灣地圖">
+
+                <!-- 四大區域地標按鈕 -->
+                <div class="map-pin pin-north" onclick="openNorthLevel()">
+                    <span style="font-size:26px;">📍</span>
+                    <div>
+                        <div>北部關卡</div>
+                        <span class="pin-sub" style="font-size:14px; font-weight:normal; color:#666;">石雕工藝工坊</span>
+                    </div>
+                </div>
+
+                <div class="map-pin pin-central" onclick="openCentralLevel()">
+                    <span style="font-size:26px;">📍</span>
+                    <div>
+                        <div>中部關卡</div>
+                        <span class="pin-sub" style="font-size:14px; font-weight:normal; color:#666;">吹玻璃工坊</span>
+                    </div>
+                </div>
+
+                <div class="map-pin pin-south" onclick="openSouthLevel()">
+                    <span style="font-size:26px;">📍</span>
+                    <div>
+                        <div>南部關卡</div>
+                        <span class="pin-sub" style="font-size:14px; font-weight:normal; color:#666;">捏黏土工坊</span>
+                    </div>
+                </div>
+
+                <div class="map-pin pin-east" onclick="openEastLevel()">
+                    <span style="font-size:26px;">📍</span>
+                    <div>
+                        <div>東部關卡</div>
+                        <span class="pin-sub" style="font-size:14px; font-weight:normal; color:#666;">抽象畫布</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 畫面 2：北部關卡 -->
+    <div id="screen-north" class="screen">
+        <div>
+            <h2>北部關卡：石雕工藝體驗工坊</h2>
+            <p class="sub-desc" id="north-guide-text">選擇你想雕刻的類型與姿態，或上傳自己的圖片將石胚鑿雕成藝術品！</p>
+
+            <div class="upload-box">
+                <div class="upload-box-left">
+                    <label for="custom-north-upload">📁 上傳自訂石雕素材/圖片：</label>
+                    <input type="file" id="custom-north-upload" class="file-input" accept="image/*" onchange="handleNorthUpload(event)">
+                    <span id="north-upload-status" style="font-size: 13px; color: #7f8c8d;">未上傳 (可選擇下方預設人像或動物造型)</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="play-zone">
+            <div id="sculpture-selection-area">
+                <div class="sculpture-category-title">🧍 人像類</div>
+                <div class="sculpture-options-grid">
+                    <button class="sculpture-btn" onclick="selectSculptureShape('站姿人像', '🧍')">🧍 站姿</button>
+                    <button class="sculpture-btn" onclick="selectSculptureShape('坐姿人像', '🧎')">🧎 坐姿</button>
+                    <button class="sculpture-btn" onclick="selectSculptureShape('走路姿態人像', '🚶')">🚶 走路姿態</button>
+                </div>
+
+                <div class="sculpture-category-title">🐎 動物類</div>
+                <div class="sculpture-options-grid">
+                    <button class="sculpture-btn" onclick="selectSculptureShape('駿馬石雕', '🐎')">🐎 馬</button>
+                    <button class="sculpture-btn" onclick="selectSculptureShape('雄牛石雕', '🐂')">🐂 牛</button>
+                    <button class="sculpture-btn" onclick="selectSculptureShape('靈犬石雕', '🐕')">🐕 狗</button>
+                </div>
+            </div>
+
+            <div id="sculpture-play-phase" class="sculpture-playground" style="display: none; width:100%;">
+                <h3 id="sculpture-art-title" style="color:#5c3a21; font-size:22px; margin:0 0 12px 0;">雕刻目標：站姿人像</h3>
+                
+                <div id="stone-block" class="block-canvas" onclick="hitSculpture()">
+                    <img id="stone-custom-preview" src="" style="display:none; max-width:85%; max-height:70%; object-fit:contain; filter:grayscale(100%) opacity(0.25); margin-bottom:8px;" alt="石胚輪廓">
+                    <span id="stone-block-text">🔨 點擊連續敲擊開鑿！</span>
+                </div>
+                
+                <div class="progress-bar-container">
+                    <div id="sculpture-progress" class="progress-bar-fill"></div>
+                </div>
+                <p id="sculpture-status-text">進度：石胚粗胚開鑿中 (0/100%)</p>
+
+                <div id="sculpture-finished-view" style="display: none;">
+                    <div class="sculpture-finished-card">
+                        <span id="sculpture-finished-icon" class="sculpture-finished-icon">🗿</span>
+                        <img id="sculpture-finished-img" class="sculpture-custom-result" src="" style="display:none;" alt="自訂石雕成品">
+                        <h3 id="sculpture-finished-title" style="color:#5c3a21; font-size:24px; margin: 12px 0 0 0;">站姿人像 石雕完成</h3>
+                    </div>
+                    <p style="font-size: 20px; font-weight: bold; color: #27ae60;">🎉 雕刻傑作大功告成！線條流暢、栩栩如生！</p>
+                    <button class="btn" onclick="resetNorthLevel()">再雕刻一個作品</button>
+                </div>
+            </div>
+        </div>
+        
+        <button class="btn btn-back" onclick="backToMap()">返回台灣地圖</button>
+    </div>
+
+    <!-- 畫面 3：中部關卡 -->
+    <div id="screen-central" class="screen">
+        <div>
+            <h2>中部關卡：新竹與苗栗吹玻璃工坊</h2>
+            <p class="sub-desc">選擇玻璃顏色與無填色線稿造型（或上傳黑白線稿），點擊「吹氣塑形」體驗彩色玻璃創作！</p>
+
+            <div class="upload-box">
+                <div class="upload-box-left">
+                    <label for="custom-glass-upload">📁 上傳自訂玻璃線稿/圖片：</label>
+                    <input type="file" id="custom-glass-upload" class="file-input" accept="image/*" onchange="handleGlassUpload(event)">
+                    <span id="glass-upload-status" style="font-size: 13px; color: #7f8c8d;">未上傳 (建議使用白底黑線稿，不會與玻璃顏色衝突)</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="play-zone glass-playzone">
+            <div id="glass-selection-area" style="width:100%;">
+                <p style="font-size:18px; font-weight:bold; color:#00d2d3; margin:5px 0;">1. 選擇玻璃顏色 (6色自選)：</p>
+                <div class="glass-color-grid">
+                    <div class="color-dot-btn selected" style="background:#e74c3c;" title="紅色玻璃" onclick="selectGlassColor('#e74c3c', '紅', this)"></div>
+                    <div class="color-dot-btn" style="background:#e67e22;" title="橘色玻璃" onclick="selectGlassColor('#e67e22', '橘', this)"></div>
+                    <div class="color-dot-btn" style="background:#f1c40f;" title="黃色玻璃" onclick="selectGlassColor('#f1c40f', '黃', this)"></div>
+                    <div class="color-dot-btn" style="background:#2ecc71;" title="綠色玻璃" onclick="selectGlassColor('#2ecc71', '綠', this)"></div>
+                    <div class="color-dot-btn" style="background:#3498db;" title="藍色玻璃" onclick="selectGlassColor('#3498db', '藍', this)"></div>
+                    <div class="color-dot-btn" style="background:#9b59b6;" title="紫色玻璃" onclick="selectGlassColor('#9b59b6', '紫', this)"></div>
+                </div>
+
+                <p style="font-size:18px; font-weight:bold; color:#00d2d3; margin:10px 0 8px 0;">2. 選擇純線稿玻璃造型（無上色，完美呈現玻璃色彩）：</p>
+                <div style="text-align:center; max-width:820px; margin:0 auto;">
+                    <span style="color:#f1c40f; font-weight:bold;">【容器版】</span>
+                    <div class="glass-shape-grid">
+                        <button class="glass-btn" onclick="selectGlassShape('花瓶', 'vase')">
+                            <svg class="glass-btn-svg" viewBox="0 0 64 64"><path d="M24 10h16M26 10v6c0 4-8 8-8 18 0 11 6 20 14 20s14-9 14-20c0-10-8-14-8-18v-6"/></svg>
+                            花瓶
+                        </button>
+                        <button class="glass-btn" onclick="selectGlassShape('碗', 'bowl')">
+                            <svg class="glass-btn-svg" viewBox="0 0 64 64"><path d="M10 24h44c0 15-10 24-22 24S10 39 10 24zM24 48l-2 6h20l-2-6"/></svg>
+                            碗
+                        </button>
+                        <button class="glass-btn" onclick="selectGlassShape('盤', 'plate')">
+                            <svg class="glass-btn-svg" viewBox="0 0 64 64"><ellipse cx="32" cy="34" rx="26" ry="12"/><ellipse cx="32" cy="34" rx="16" ry="6"/></svg>
+                            盤
+                        </button>
+                    </div>
+
+                    <span style="color:#f1c40f; font-weight:bold;">【動物造型】</span>
+                    <div class="glass-shape-grid">
+                        <button class="glass-btn" onclick="selectGlassShape('鳥', 'bird')">
+                            <svg class="glass-btn-svg" viewBox="0 0 64 64"><path d="M16 38c4-14 16-20 26-16 4 2 6 6 6 10l7 2-7 4c-2 10-12 14-24 12l-13 4 4-8-8-4 9-4z"/><circle cx="42" cy="27" r="1.5"/></svg>
+                            鳥
+                        </button>
+                        <button class="glass-btn" onclick="selectGlassShape('鯉魚', 'koi')">
+                            <svg class="glass-btn-svg" viewBox="0 0 64 64"><path d="M14 32c10-14 26-14 36 0-10 14-26 14-36 0zM14 32l-8-8v16l8-8zM30 22l4-6 4 6M30 42l4 6 4-6"/><circle cx="42" cy="30" r="1.5"/></svg>
+                            鯉魚
+                        </button>
+                        <button class="glass-btn" onclick="selectGlassShape('熊', 'bear')">
+                            <svg class="glass-btn-svg" viewBox="0 0 64 64"><circle cx="18" cy="18" r="6"/><circle cx="46" cy="18" r="6"/><circle cx="32" cy="34" r="18"/><circle cx="26" cy="30" r="1.5"/><circle cx="38" cy="30" r="1.5"/><ellipse cx="32" cy="38" rx="6" ry="5"/><path d="M30 37h4l-2 2.5z"/></svg>
+                            熊
+                        </button>
+                    </div>
+
+                    <span style="color:#f1c40f; font-weight:bold;">【水果造型】</span>
+                    <div class="glass-shape-grid">
+                        <button class="glass-btn" onclick="selectGlassShape('蘋果', 'apple')">
+                            <svg class="glass-btn-svg" viewBox="0 0 64 64"><path d="M32 20c-8-4-18 2-18 14 0 12 8 20 14 20 2 0 3-1 4-1s2 1 4 1c6 0 14-8 14-20 0-12-10-18-18-14z"/><path d="M32 20c0-6 4-10 8-10"/><path d="M32 16c-4-4-10-4-12 0 4 2 8 2 12 0z"/></svg>
+                            蘋果
+                        </button>
+                        <button class="glass-btn" onclick="selectGlassShape('葡萄', 'grape')">
+                            <svg class="glass-btn-svg" viewBox="0 0 64 64"><path d="M32 16v-8M32 12c6-4 12-2 14 2-4 2-10 2-14-2z"/><circle cx="24" cy="24" r="6"/><circle cx="32" cy="24" r="6"/><circle cx="40" cy="24" r="6"/><circle cx="28" cy="34" r="6"/><circle cx="36" cy="34" r="6"/><circle cx="32" cy="44" r="6"/></svg>
+                            葡萄
+                        </button>
+                        <button class="glass-btn" onclick="selectGlassShape('香蕉', 'banana')">
+                            <svg class="glass-btn-svg" viewBox="0 0 64 64"><path d="M16 44c14 6 32-4 34-26l4-2c0 24-20 38-40 32l2-4z"/><path d="M18 42c10 2 24-6 28-22"/></svg>
+                            香蕉
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="glass-play-area" style="display:none; width:100%;">
+                <h3 id="glass-title-display" style="color:#00d2d3; font-size:22px;">吹製目標：紅色 花瓶</h3>
+                
+                <div class="glass-stage">
+                    <div id="glass-bulb" class="glass-bulb" onclick="blowGlass()">
+                        <div id="glass-lineart-container" class="glass-lineart-box" style="opacity:0.25; transform:scale(0.6);"></div>
+                        <img id="glass-custom-img" class="glass-custom-lineart" src="" style="display:none;" alt="自訂玻璃線稿">
+                    </div>
+                </div>
+
+                <div class="progress-bar-container">
+                    <div id="glass-progress" class="progress-bar-fill" style="background-color:#00d2d3;"></div>
+                </div>
+                <p id="glass-status-text">點擊熾熱玻璃球吹氣！ (0/100%)</p>
+
+                <div id="glass-complete-view" style="display:none; margin-top:10px;">
+                    <p style="font-size:20px; font-weight:bold; color:#00d2d3;">✨ 吹製完成！晶瑩剔透的玻璃藝術品出爐囉！</p>
+                    <button class="btn" style="background:#00d2d3; color:#1e272e; font-weight:bold;" onclick="resetGlassArea()">再吹一個玻璃作品</button>
+                </div>
+            </div>
+        </div>
+        
+        <button class="btn btn-back" onclick="backToMap()">返回台灣地圖</button>
+    </div>
+
+    <!-- 畫面 4：南部關卡 -->
+    <div id="screen-south" class="screen">
+        <div>
+            <h2>南部關卡：交趾陶與創意捏黏土工坊</h2>
+            <p class="sub-desc">選擇喜歡的黏土圖形，點擊黏土塊體驗動手揉捏塑形的樂趣！</p>
+
+            <div class="upload-box">
+                <div class="upload-box-left">
+                    <label for="custom-clay-upload">📁 上傳自訂黏土素材/圖片：</label>
+                    <input type="file" id="custom-clay-upload" class="file-input" accept="image/*" onchange="handleClayUpload(event)">
+                    <span id="clay-upload-status" style="font-size: 13px; color: #7f8c8d;">未上傳 (使用預設分類高對比圖形)</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="play-zone">
+            <div id="clay-selection-area">
+                <div class="clay-category-title">🔷 基本圖形</div>
+                <div class="clay-options-grid">
+                    <button class="clay-btn" onclick="selectClayShape('愛心', '❤️', '#e74c3c')">❤️ 愛心</button>
+                    <button class="clay-btn" onclick="selectClayShape('星形', '⭐', '#f1c40f')">⭐ 星形</button>
+                    <button class="clay-btn" onclick="selectClayShape('菱形', '◆', '#00bec4')">◆ 菱形</button>
+                </div>
+
+                <div class="clay-category-title">🐶 動物形狀</div>
+                <div class="clay-options-grid">
+                    <button class="clay-btn" onclick="selectClayShape('小狗', '🐶', '#e67e22')">🐶 狗</button>
+                    <button class="clay-btn" onclick="selectClayShape('小貓', '🐱', '#ff7675')">🐱 貓</button>
+                    <button class="clay-btn" onclick="selectClayShape('小鳥', '🐦', '#0984e3')">🐦 鳥</button>
+                </div>
+
+                <div class="clay-category-title">🌸 花草圖形</div>
+                <div class="clay-options-grid">
+                    <button class="clay-btn" onclick="selectClayShape('花瓣', '🌸', '#fd79a8')">🌸 花瓣</button>
+                    <button class="clay-btn" onclick="selectClayShape('葉子', '🍃', '#00b894')">🍃 葉子</button>
+                    <button class="clay-btn" onclick="selectClayShape('果實', '🍎', '#d63031')">🍎 果實</button>
+                </div>
+            </div>
+
+            <div id="clay-play-area" style="display: none; width:100%;">
+                <h3 id="clay-shape-title" style="font-size:22px;">捏塑目標：愛心</h3>
+                
+                <div id="clay-lump" class="clay-canvas" onclick="pinchClay()">
+                    <span id="clay-symbol" class="clay-symbol-text">🔴</span>
+                    <img id="clay-custom-img" src="" style="display:none; width: min(44vw, 320px); height: min(38vh, 300px); object-fit:contain; border:4px solid #fff; border-radius:12px;" alt="自訂黏土">
+                </div>
+
+                <div class="progress-bar-container">
+                    <div id="clay-progress" class="progress-bar-fill"></div>
+                </div>
+                <p id="clay-status-text">點擊黏土塊開始揉捏！ (0/100%)</p>
+
+                <div id="clay-complete-view" style="display: none;">
+                    <p style="font-size: 20px; font-weight: bold; color: #27ae60;">🎉 塑形完成！漂亮的交趾陶作品出來囉！</p>
+                    <button class="btn" onclick="resetClayArea()">再捏一個作品</button>
+                </div>
+            </div>
+        </div>
+        
+        <button class="btn btn-back" onclick="backToMap()">返回台灣地圖</button>
+    </div>
+
+    <!-- 畫面 5：東部關卡 -->
+    <div id="screen-east" class="screen">
+        <div>
+            <h2>東部關卡：台東江賢二藝術園區抽象畫布</h2>
+            <p class="sub-desc">點選大師在台東常使用的抽象元素色塊，在中央畫框中拼貼創作出專屬您的《比西里岸之夢》抽象畫作！</p>
+        </div>
+        
+        <div class="play-zone">
+            <div class="collage-container">
+                <div class="color-palette">
+                    <div class="palette-item" style="background-color: #1a5276;" onclick="addCollageElement('#1a5276', '太平洋深藍')">🌊 太平洋深藍</div>
+                    <div class="palette-item" style="background-color: #f39c12;" onclick="addCollageElement('#f39c12', '比西里岸金黃')">☀️ 比西里岸金黃</div>
+                    <div class="palette-item" style="background-color: #27ae60;" onclick="addCollageElement('#27ae60', '東岸山脈綠')">🌿 東岸山脈綠</div>
+                    <div class="palette-item" style="background-color: #a569bd;" onclick="addCollageElement('#a569bd', '藝術園區紫')">🔮 藝術園區紫</div>
+                    <button class="btn" style="font-size:16px; padding:10px; margin:4px 0;" onclick="clearCanvas()">🎨 重塑空白畫布</button>
+                </div>
+                <div class="art-canvas-frame" id="art-canvas"></div>
+            </div>
+            
+            <p id="collage-counter-text" style="font-weight: bold; margin-top: 15px; color: #7e5109;">目前已拼貼色塊：0 / 8 層</p>
+            <div id="east-achievement" class="quiz-feedback correct" style="display: none; font-size: 16px; text-align: left; max-width:540px; margin:8px auto 0 auto;">
+                ✨ <b>解鎖東部寶藏！</b> 恭喜您透過色彩重組完成江賢二藝術園區的抽象體驗。
+            </div>
+        </div>
+        
+        <button class="btn btn-back" onclick="backToMap()">返回台灣地圖</button>
+    </div>
+
+</div>
+
+<script>
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    function backToMap() {
+        showScreen('screen-map');
+    }
+
+    /* ==========================================================================
+       首頁台灣地圖管理（支援自訂上傳替換 + localStorage 記憶 + 離線備援）
+       ========================================================================== */
+    const MAP_STORAGE_KEY = "taiwan-art-game-custom-map-v1";
+    const DEFAULT_MAP_URL = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Taiwan_location_map.svg/900px-Taiwan_location_map.svg.png";
+    const FALLBACK_MAP_SVG = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800">
+            <rect width="600" height="800" fill="#d7ecf5" rx="24"/>
+            <g stroke="#b7d8e8" stroke-width="1.5" stroke-dasharray="8,8">
+                <line x1="0" y1="200" x2="600" y2="200"/><line x1="0" y1="400" x2="600" y2="400"/><line x1="0" y1="600" x2="600" y2="600"/>
+                <line x1="200" y1="0" x2="200" y2="800"/><line x1="400" y1="0" x2="400" y2="800"/>
+            </g>
+            <g fill="#9bc48c" stroke="#5b7d4e" stroke-width="3">
+                <path d="M 105,435 C 115,428 126,434 123,446 C 119,456 106,453 105,435 Z"/>
+                <path d="M 92,456 C 99,453 105,459 101,466 C 95,470 89,463 92,456 Z"/>
+                <path d="M 109,476 C 115,473 121,479 116,486 C 111,489 106,482 109,476 Z"/>
+            </g>
+            <path d="M 418,54 C 446,60 475,80 489,106 C 498,123 478,148 472,177 C 466,208 458,254 446,308 C 435,365 420,425 403,485 C 386,545 363,605 349,660 C 340,694 334,731 320,748 C 309,757 294,740 289,711 C 280,674 260,631 234,591 C 209,551 191,508 189,462 C 186,414 197,362 217,311 C 237,260 269,205 306,154 C 340,108 383,50 418,54 Z"
+                  fill="#9cc78b" stroke="#4f7342" stroke-width="6" stroke-linejoin="round"/>
+            <path d="M 398,135 L 379,235 L 360,342 L 346,464 L 329,592" fill="none" stroke="#628754" stroke-width="4" stroke-linecap="round" stroke-dasharray="10,8"/>
+            <circle cx="450" cy="592" r="9" fill="#9cc78b" stroke="#4f7342" stroke-width="3"/>
+            <ellipse cx="466" cy="674" rx="12" ry="9" fill="#9cc78b" stroke="#4f7342" stroke-width="3"/>
+        </svg>
+    `);
+
+    function handleMapLoadError(imgEl) {
+        if (imgEl.src !== FALLBACK_MAP_SVG) {
+            imgEl.src = FALLBACK_MAP_SVG;
+        }
+    }
+
+    function initCustomMap() {
+        try {
+            const savedMap = localStorage.getItem(MAP_STORAGE_KEY);
+            if (savedMap) {
+                document.getElementById('taiwan-map-img').src = savedMap;
+                document.getElementById('map-upload-status').innerText = "✅ 已套用自訂台灣地圖";
+                document.getElementById('map-upload-status').style.color = "#27ae60";
+                document.getElementById('btn-reset-map').style.display = "inline-block";
+            }
+        } catch (e) {}
+    }
+
+    function handleMapUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const dataUrl = e.target.result;
+            document.getElementById('taiwan-map-img').src = dataUrl;
+            document.getElementById('map-upload-status').innerText = `✅ 已套用自訂地圖：${file.name}`;
+            document.getElementById('map-upload-status').style.color = "#27ae60";
+            document.getElementById('btn-reset-map').style.display = "inline-block";
+            try {
+                localStorage.setItem(MAP_STORAGE_KEY, dataUrl);
+            } catch (err) {}
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function resetDefaultMap() {
+        document.getElementById('taiwan-map-img').src = DEFAULT_MAP_URL;
+        document.getElementById('map-upload-status').innerText = "已恢復預設台灣地圖";
+        document.getElementById('map-upload-status').style.color = "#7f8c8d";
+        document.getElementById('btn-reset-map').style.display = "none";
+        document.getElementById('custom-map-upload').value = "";
+        try { localStorage.removeItem(MAP_STORAGE_KEY); } catch (e) {}
+    }
+
+    initCustomMap();
+
+    /* ==========================================================================
+       東部關卡邏輯
+       ========================================================================== */
+    let collageCount = 0;
+    const targetCollageCount = 8;
+
+    function openEastLevel() {
+        showScreen('screen-east');
+        clearCanvas();
+    }
+
+    function clearCanvas() {
+        const canvas = document.getElementById('art-canvas');
+        canvas.innerHTML = '';
+        collageCount = 0;
+        document.getElementById('collage-counter-text').innerText = "目前已拼貼色塊：0 / 8 層";
+        document.getElementById('east-achievement').style.display = 'none';
+    }
+
+    function addCollageElement(color, colorName) {
+        if(collageCount >= 20) return;
+        collageCount++;
+        
+        const canvas = document.getElementById('art-canvas');
+        const element = document.createElement('div');
+        element.className = 'collage-element';
+        
+        const w = Math.floor(Math.random() * 110) + 65;
+        const h = Math.floor(Math.random() * 110) + 65;
+        const left = Math.floor(Math.random() * (canvas.clientWidth - w));
+        const top = Math.floor(Math.random() * (canvas.clientHeight - h));
+        
+        element.style.width = w + 'px';
+        element.style.height = h + 'px';
+        element.style.left = left + 'px';
+        element.style.top = top + 'px';
+        element.style.backgroundColor = color;
+        
+        const rotate = Math.floor(Math.random() * 60) - 30;
+        element.style.transform = `rotate(${rotate}deg)`;
+        
+        canvas.appendChild(element);
+
+        if(collageCount <= targetCollageCount) {
+            document.getElementById('collage-counter-text').innerText = `目前已拼貼色塊：${collageCount} / ${targetCollageCount} 層`;
+        } else {
+            document.getElementById('collage-counter-text').innerText = `已達成藝術大師創作！(總計堆疊：${collageCount} 層)`;
+        }
+
+        if(collageCount === targetCollageCount) {
+            document.getElementById('east-achievement').style.display = 'block';
+        }
+    }
+
+    /* ==========================================================================
+       北部關卡邏輯：開放上傳素材 + 自選石雕工法體驗
+       ========================================================================== */
+    let customNorthImageUrl = null;
+    let isNorthCustom = false;
+    let selectedSculptureName = '';
+    let selectedSculptureSymbol = '';
+    let sculptureClicks = 0;
+    const clicksRequired = 15;
+
+    function openNorthLevel() {
+        showScreen('screen-north');
+        resetNorthLevel();
+    }
+
+    function handleNorthUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                customNorthImageUrl = e.target.result;
+                document.getElementById('north-upload-status').innerText = `✅ 已載入石雕素材：${file.name}`;
+                document.getElementById('north-upload-status').style.color = '#27ae60';
+                selectSculptureShape(`自訂石雕 (${file.name})`, '🗿', true);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function resetNorthLevel() {
+        sculptureClicks = 0;
+        selectedSculptureName = '';
+        isNorthCustom = false;
+        document.getElementById('north-guide-text').innerText = "選擇你想雕刻的類型與姿態，或上傳自己的圖片將石胚鑿雕成藝術品！";
+        document.getElementById('sculpture-selection-area').style.display = 'block';
+        document.getElementById('sculpture-play-phase').style.display = 'none';
+        document.getElementById('stone-block').style.display = 'flex';
+        document.getElementById('stone-block').style.backgroundColor = "#bdc3c7";
+        document.getElementById('stone-custom-preview').style.display = 'none';
+        document.getElementById('sculpture-finished-view').style.display = 'none';
+        document.getElementById('sculpture-progress').style.width = '0%';
+        document.getElementById('sculpture-status-text').innerText = "進度：石胚粗胚開鑿中 (0/100%)";
+    }
+
+    function selectSculptureShape(name, symbol, customFlag = false) {
+        selectedSculptureName = name;
+        selectedSculptureSymbol = symbol;
+        isNorthCustom = customFlag;
+        sculptureClicks = 0;
+
+        document.getElementById('north-guide-text').innerText = "石雕工坊體驗中：";
+        document.getElementById('sculpture-selection-area').style.display = 'none';
+        document.getElementById('sculpture-play-phase').style.display = 'flex';
+        document.getElementById('sculpture-finished-view').style.display = 'none';
+        document.getElementById('sculpture-art-title').innerText = `雕刻目標：${name}`;
+        
+        const stoneBlock = document.getElementById('stone-block');
+        const customPreview = document.getElementById('stone-custom-preview');
+        stoneBlock.style.display = 'flex';
+        stoneBlock.style.backgroundColor = "#bdc3c7";
+        document.getElementById('stone-block-text').innerText = "🔨 點擊連續敲擊開鑿！";
+
+        if (isNorthCustom && customNorthImageUrl) {
+            customPreview.src = customNorthImageUrl;
+            customPreview.style.display = 'block';
+            customPreview.style.filter = 'grayscale(100%) opacity(0.2)';
+        } else {
+            customPreview.style.display = 'none';
+        }
+    }
+
+    function hitSculpture() {
+        if (sculptureClicks >= clicksRequired) return;
+
+        sculptureClicks++;
+
+        const progressPercent = Math.min((sculptureClicks / clicksRequired) * 100, 100);
+        document.getElementById('sculpture-progress').style.width = progressPercent + '%';
+
+        const statusText = document.getElementById('sculpture-status-text');
+        const stoneBlock = document.getElementById('stone-block');
+        const customPreview = document.getElementById('stone-custom-preview');
+
+        stoneBlock.style.transform = 'scale(0.96)';
+        setTimeout(() => { stoneBlock.style.transform = 'scale(1)'; }, 100);
+
+        if (progressPercent < 40) {
+            statusText.innerText = `進度：石胚粗胚輪廓開鑿中 (${Math.floor(progressPercent)}%)`;
+            stoneBlock.style.backgroundColor = "#bdc3c7";
+            if (isNorthCustom) customPreview.style.filter = 'grayscale(100%) opacity(0.35)';
+        } else if (progressPercent < 80) {
+            statusText.innerText = `進度：細部姿態曲線雕琢 (${Math.floor(progressPercent)}%)`;
+            stoneBlock.style.backgroundColor = "#95a5a6";
+            if (isNorthCustom) customPreview.style.filter = 'grayscale(100%) opacity(0.6)';
+        } else if (progressPercent < 100) {
+            statusText.innerText = `進度：最後作品表面修整拋光 (${Math.floor(progressPercent)}%)`;
+            stoneBlock.style.backgroundColor = "#7f8c8d";
+            if (isNorthCustom) customPreview.style.filter = 'grayscale(100%) opacity(0.85)';
+        } else {
+            statusText.innerText = `🎉 成功雕刻出【${selectedSculptureName}】作品！ (100%)`;
+            stoneBlock.style.display = 'none';
+            
+            const finishedIcon = document.getElementById('sculpture-finished-icon');
+            const finishedImg = document.getElementById('sculpture-finished-img');
+
+            if (isNorthCustom && customNorthImageUrl) {
+                finishedIcon.style.display = 'none';
+                finishedImg.src = customNorthImageUrl;
+                finishedImg.style.display = 'block';
+            } else {
+                finishedImg.style.display = 'none';
+                finishedIcon.style.display = 'inline-block';
+                finishedIcon.innerText = selectedSculptureSymbol;
+            }
+
+            document.getElementById('sculpture-finished-title').innerText = `${selectedSculptureName} 石雕完成`;
+            document.getElementById('sculpture-finished-view').style.display = 'block';
+        }
+    }
+
+    /* ==========================================================================
+       中部關卡邏輯：開放上傳線稿 + 純線稿三類玻璃造型
+       ========================================================================== */
+    let customGlassImageUrl = null;
+    let isGlassCustom = false;
+    let selectedGlassColor = '#e74c3c';
+    let selectedGlassColorName = '紅';
+    let selectedGlassShapeName = '';
+    let selectedGlassShapeKey = 'vase';
+    let blowClicks = 0;
+    const blowRequired = 10;
+
+    const glassLineartLibrary = {
+        vase: `<svg viewBox="0 0 64 64"><path d="M22 10h20M25 10v7c0 4-9 9-9 20 0 11 6 19 16 19s16-8 16-19c0-11-9-16-9-20v-7"/><path d="M21 36c6 3 16 3 22 0" stroke-dasharray="3,3"/></svg>`,
+        bowl: `<svg viewBox="0 0 64 64"><path d="M8 22h48c0 17-11 26-24 26S8 39 8 22z"/><path d="M23 48l-2 6h22l-2-6"/><path d="M12 28c12 3 28 3 40 0"/></svg>`,
+        plate: `<svg viewBox="0 0 64 64"><ellipse cx="32" cy="34" rx="27" ry="13"/><ellipse cx="32" cy="34" rx="17" ry="7"/><path d="M10 38c6 6 38 6 44 0"/></svg>`,
+        bird: `<svg viewBox="0 0 64 64"><path d="M16 38c4-14 16-20 26-16 4 2 6 6 6 10l7 2-7 4c-2 10-12 14-24 12l-13 4 4-8-8-4 9-4z"/><path d="M24 34c5-3 10-2 13 2-4 3-9 3-13-2z"/><circle cx="42" cy="27" r="1.8"/></svg>`,
+        koi: `<svg viewBox="0 0 64 64"><path d="M15 32c10-15 27-15 38 0-11 15-27 15-38 0z"/><path d="M15 32l-9-9v18l9-9z"/><path d="M29 21l5-7 5 7M29 43l5 7 5-7"/><path d="M39 25c-2 4-2 10 0 14"/><circle cx="44" cy="30" r="1.8"/></svg>`,
+        bear: `<svg viewBox="0 0 64 64"><circle cx="17" cy="17" r="6"/><circle cx="47" cy="17" r="6"/><circle cx="32" cy="34" r="19"/><circle cx="25" cy="30" r="1.8"/><circle cx="39" cy="30" r="1.8"/><ellipse cx="32" cy="39" rx="7" ry="5.5"/><path d="M30 37h4l-2 2.5z"/><path d="M32 39.5v2.5"/></svg>`,
+        apple: `<svg viewBox="0 0 64 64"><path d="M32 20c-8-4-19 2-19 15 0 12 8 21 15 21 2 0 3-1 4-1s2 1 4 1c7 0 15-9 15-21 0-13-11-19-19-15z"/><path d="M32 20c0-7 4-11 9-11"/><path d="M32 16c-4-5-11-5-13 0 4 2 9 2 13 0z"/></svg>`,
+        grape: `<svg viewBox="0 0 64 64"><path d="M32 16V7"/><path d="M32 12c6-4 13-2 15 2-4 2-11 2-15-2z"/><circle cx="23" cy="23" r="6"/><circle cx="32" cy="23" r="6"/><circle cx="41" cy="23" r="6"/><circle cx="27.5" cy="33" r="6"/><circle cx="36.5" cy="33" r="6"/><circle cx="32" cy="43" r="6"/></svg>`,
+        banana: `<svg viewBox="0 0 64 64"><path d="M14 44c15 7 34-4 36-27l5-2c0 26-21 41-43 34l2-5z"/><path d="M17 42c11 2 26-7 30-23"/><path d="M50 17l3-4"/></svg>`
+    };
+
+    function openCentralLevel() {
+        showScreen('screen-central');
+        resetGlassArea();
+    }
+
+    function handleGlassUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                customGlassImageUrl = e.target.result;
+                document.getElementById('glass-upload-status').innerText = `✅ 已載入玻璃線稿：${file.name}`;
+                document.getElementById('glass-upload-status').style.color = '#27ae60';
+                selectGlassShape(`自訂線稿 (${file.name})`, 'custom', true);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function selectGlassColor(colorHex, name, element) {
+        selectedGlassColor = colorHex;
+        selectedGlassColorName = name;
+        document.querySelectorAll('.glass-color-grid .color-dot-btn').forEach(b => b.classList.remove('selected'));
+        element.classList.add('selected');
+    }
+
+    function selectGlassShape(shapeName, shapeKey, customFlag = false) {
+        selectedGlassShapeName = shapeName;
+        selectedGlassShapeKey = shapeKey;
+        isGlassCustom = customFlag;
+        blowClicks = 0;
+
+        document.getElementById('glass-selection-area').style.display = 'none';
+        document.getElementById('glass-play-area').style.display = 'block';
+        document.getElementById('glass-complete-view').style.display = 'none';
+        document.getElementById('glass-title-display').innerText = `吹製目標：${selectedGlassColorName}色 ${shapeName}`;
+
+        const bulb = document.getElementById('glass-bulb');
+        const lineartBox = document.getElementById('glass-lineart-container');
+        const customImg = document.getElementById('glass-custom-img');
+
+        bulb.style.width = '100px';
+        bulb.style.height = '100px';
+        bulb.style.background = `radial-gradient(circle at 30% 30%, #ffffff 0%, ${selectedGlassColor} 80%)`;
+        bulb.style.boxShadow = `0 0 30px ${selectedGlassColor}, inset 0 0 15px rgba(255,255,255,0.85)`;
+
+        if (isGlassCustom && customGlassImageUrl) {
+            lineartBox.style.display = 'none';
+            customImg.src = customGlassImageUrl;
+            customImg.style.display = 'block';
+            customImg.style.opacity = '0.25';
+            customImg.style.transform = 'scale(0.6)';
+        } else {
+            customImg.style.display = 'none';
+            lineartBox.style.display = 'flex';
+            lineartBox.innerHTML = glassLineartLibrary[shapeKey] || glassLineartLibrary.vase;
+            lineartBox.style.opacity = '0.25';
+            lineartBox.style.transform = 'scale(0.6)';
+        }
+
+        document.getElementById('glass-progress').style.width = '0%';
+        document.getElementById('glass-status-text').innerText = `點擊熾熱玻璃胚體開始吹氣膨脹！ (0/100%)`;
+    }
+
+    function blowGlass() {
+        if (blowClicks >= blowRequired) return;
+
+        blowClicks++;
+        const progressPercent = Math.min((blowClicks / blowRequired) * 100, 100);
+        document.getElementById('glass-progress').style.width = progressPercent + '%';
+
+        const bulb = document.getElementById('glass-bulb');
+        const lineartBox = document.getElementById('glass-lineart-container');
+        const customImg = document.getElementById('glass-custom-img');
+        const statusText = document.getElementById('glass-status-text');
+        const activeVisual = isGlassCustom ? customImg : lineartBox;
+
+        const maxTargetSize = Math.min(window.innerWidth * 0.45, 360);
+        const currentSize = 100 + (progressPercent / 100) * (maxTargetSize - 100); 
+        bulb.style.width = `${currentSize}px`;
+        bulb.style.height = `${currentSize}px`;
+
+        bulb.style.transform = 'scale(1.08)';
+        setTimeout(() => { bulb.style.transform = 'scale(1)'; }, 150);
+
+        if (progressPercent < 40) {
+            statusText.innerText = `吹氣塑形中：高熱玻璃軟化膨脹... (${Math.floor(progressPercent)}%)`;
+            activeVisual.style.opacity = '0.45';
+            activeVisual.style.transform = 'scale(0.75)';
+        } else if (progressPercent < 100) {
+            statusText.innerText = `冷卻定型中：逐漸顯現【${selectedGlassColorName}色 ${selectedGlassShapeName}】線條輪廓！ (${Math.floor(progressPercent)}%)`;
+            activeVisual.style.opacity = '0.75';
+            activeVisual.style.transform = 'scale(0.9)';
+        } else {
+            bulb.style.background = `radial-gradient(circle at 32% 32%, #ffffff 0%, ${selectedGlassColor} 78%, rgba(0,0,0,0.35) 100%)`;
+            bulb.style.boxShadow = `0 0 38px ${selectedGlassColor}, inset 0 0 25px rgba(255,255,255,0.9)`;
+            
+            activeVisual.style.opacity = '1';
+            activeVisual.style.transform = 'scale(1.05)';
+            
+            statusText.innerText = `🎉 成功吹製出完美的【${selectedGlassColorName}色 ${selectedGlassShapeName}】藝術品！ (100%)`;
+            document.getElementById('glass-complete-view').style.display = 'block';
+        }
+    }
+
+    function resetGlassArea() {
+        blowClicks = 0;
+        isGlassCustom = false;
+        document.getElementById('glass-selection-area').style.display = 'block';
+        document.getElementById('glass-play-area').style.display = 'none';
+    }
+
+    /* ==========================================================================
+       南部關卡邏輯：捏黏土體驗
+       ========================================================================== */
+    let customClayImageUrl = null;
+    let selectedClayName = '';
+    let selectedClaySymbol = '';
+    let selectedClayColor = '#f39c12';
+    let clayPinchClicks = 0;
+    const clayPinchRequired = 10;
+
+    const organicShapes = [
+        '50%',
+        '65% 35% 60% 40% / 40% 60% 40% 60%',
+        '30% 70% 40% 60% / 60% 40% 70% 30%',
+        '70% 30% 50% 50% / 30% 50% 50% 70%',
+        '40% 60% 30% 70% / 50% 30% 70% 50%',
+        '25% 75% 60% 40% / 50% 60% 40% 50%',
+        '16px'
+    ];
+
+    function openSouthLevel() {
+        showScreen('screen-south');
+        resetClayArea();
+    }
+
+    function handleClayUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                customClayImageUrl = e.target.result;
+                document.getElementById('clay-upload-status').innerText = `✅ 已載入自訂素材：${file.name}`;
+                document.getElementById('clay-upload-status').style.color = '#27ae60';
+                
+                selectClayShape(`自訂素材 (${file.name})`, '🖼️', '#00bec4', true);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function selectClayShape(name, symbol, color, isCustom = false) {
+        selectedClayName = name;
+        selectedClaySymbol = symbol;
+        selectedClayColor = color;
+        clayPinchClicks = 0;
+
+        document.getElementById('clay-selection-area').style.display = 'none';
+        document.getElementById('clay-play-area').style.display = 'block';
+        document.getElementById('clay-complete-view').style.display = 'none';
+        document.getElementById('clay-shape-title').innerText = `捏塑目標：${name}`;
+        
+        const clayCanvas = document.getElementById('clay-lump');
+        const symbolSpan = document.getElementById('clay-symbol');
+        const customImg = document.getElementById('clay-custom-img');
+
+        clayCanvas.style.backgroundColor = color;
+        clayCanvas.style.borderRadius = organicShapes[0];
+        clayCanvas.style.transform = 'scale(1) rotate(0deg)';
+
+        if (isCustom && customClayImageUrl) {
+            symbolSpan.style.display = 'none';
+            customImg.style.display = 'inline-block';
+            customImg.src = customClayImageUrl;
+            customImg.style.opacity = '0.35';
+        } else {
+            customImg.style.display = 'none';
+            symbolSpan.style.display = 'inline-block';
+            symbolSpan.innerText = '🟠';
+            symbolSpan.style.transform = 'scale(1)';
+        }
+
+        document.getElementById('clay-progress').style.width = '0%';
+        document.getElementById('clay-status-text').innerText = `點擊黏土塊開始搓揉塑形 (${name})！ (0/100%)`;
+    }
+
+    function pinchClay() {
+        if (clayPinchClicks >= clayPinchRequired) return;
+
+        clayPinchClicks++;
+        const progressPercent = Math.min((clayPinchClicks / clayPinchRequired) * 100, 100);
+        document.getElementById('clay-progress').style.width = progressPercent + '%';
+
+        const clayCanvas = document.getElementById('clay-lump');
+        const symbolSpan = document.getElementById('clay-symbol');
+        const customImg = document.getElementById('clay-custom-img');
+        const statusText = document.getElementById('clay-status-text');
+
+        const shapeIndex = Math.min(Math.floor((clayPinchClicks / clayPinchRequired) * (organicShapes.length - 1)), organicShapes.length - 2);
+        clayCanvas.style.borderRadius = organicShapes[shapeIndex + 1];
+        
+        const randomRotate = (Math.random() * 30 - 15);
+        const randomScale = 0.92 + (Math.random() * 0.12);
+        clayCanvas.style.transform = `scale(${randomScale}) rotate(${randomRotate}deg)`;
+
+        setTimeout(() => { clayCanvas.style.transform = `scale(1) rotate(0deg)`; }, 120);
+
+        if (progressPercent < 50) {
+            statusText.innerText = `搓揉中：黏土軟化變形... (${Math.floor(progressPercent)}%)`;
+        } else if (progressPercent < 100) {
+            statusText.innerText = `細部捏塑：逐漸顯現【${selectedClayName}】輪廓！ (${Math.floor(progressPercent)}%)`;
+            if (customClayImageUrl && customImg.style.display !== 'none') {
+                customImg.style.opacity = '0.75';
+            }
+        } else {
+            clayCanvas.style.borderRadius = organicShapes[organicShapes.length - 1];
+            clayCanvas.style.backgroundColor = '#ffffff';
+            clayCanvas.style.border = '6px solid ' + selectedClayColor;
+            
+            statusText.innerText = `🎉 成功捏出極具特色的【${selectedClayName}】作品！ (100%)`;
+            
+            if (customClayImageUrl && customImg.style.display !== 'none') {
+                customImg.style.opacity = '1';
+            } else {
+                symbolSpan.innerText = selectedClaySymbol;
+                symbolSpan.style.transform = 'scale(1.2)';
+            }
+
+            document.getElementById('clay-complete-view').style.display = 'block';
+        }
+    }
+
+    function resetClayArea() {
+        clayPinchClicks = 0;
+        document.getElementById('clay-selection-area').style.display = 'block';
+        document.getElementById('clay-play-area').style.display = 'none';
+        
+        const clayCanvas = document.getElementById('clay-lump');
+        clayCanvas.style.border = '6px solid #ffffff';
+    }
+</script>
+
+</body>
+</html>
+
+```
